@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout Bridge</title>
+</head>
+<body>
+  <script>
+    // This script helps bridge the business info between the parent page and the checkout iframe
+    
+    // Function to get cookie value
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+      }
+      return null;
+    }
+    
+    // Get business info from cookies or localStorage
+    function getBusinessInfo() {
+      // Try to get from localStorage first
+      const storedInfo = localStorage.getItem('businessInfo');
+      if (storedInfo) {
+        try {
+          return JSON.parse(storedInfo);
+        } catch (e) {
+          console.error("Error parsing stored business info:", e);
+        }
+      }
+      
+      // If not in localStorage, build from cookies
+      return {
+        cartId: getCookie('unique_order_id') || getCookie('temp_order_id'),
+        businessId: getCookie('wres_id') || '18',
+        orderType: getCookie('order_type') || 'delivery',
+        branchId: getCookie('branch_id') || '18',
+        source: "ordrz",
+        userLocation: {
+          lat: getCookie('userLatitude') || '0',
+          lng: getCookie('userLongitude') || '0'
+        },
+        websiteLink: window.location.origin
+      };
+    }
+    
+    // Make business info available globally
+    window.businessInfo = getBusinessInfo();
+    
+    // Log for debugging
+    console.log("Checkout bridge loaded with business info:", window.businessInfo);
+    
+    // Create a DOM element with the business info
+    const infoElement = document.createElement('div');
+    infoElement.id = 'business-info-container';
+    infoElement.setAttribute('data-business-info', JSON.stringify(window.businessInfo));
+    infoElement.style.display = 'none';
+    document.body.appendChild(infoElement);
+    
+    // Notify parent window that bridge is ready
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'CHECKOUT_BRIDGE_READY',
+        businessInfo: window.businessInfo
+      }, '*');
+    }
+  </script>
+</body>
+</html>

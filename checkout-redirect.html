@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Checkout</title>
+</head>
+<body>
+    <script>
+        // Function to get cookie value
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        // Create business info object from cookies
+        const businessInfo = {
+            cartId: getCookie('unique_order_id') || '',
+            businessId: getCookie('wres_id') || '12675',
+            orderType: getCookie('order_type') || 'delivery',
+            branchId: getCookie('branch_id') || '',
+            source: "ordrz",
+            theme: {
+                header_bg: "#ffffff",
+                header_font_color: "#000000",
+                button_bg: "#d05749",
+                button_font_color: "#ffffff",
+                button_radius: "6"
+            },
+            userLocation: {
+                lat: getCookie('userLatitude') || "0",
+                lng: getCookie('userLongitude') || "0"
+            },
+            websiteLink: window.location.origin
+        };
+        
+        // Store in localStorage and redirect
+        localStorage.setItem('businessInfo', JSON.stringify(businessInfo));
+        window.location.href = "https://checkout.ordrz.com/";
+    </script>
+</body>
+</html>

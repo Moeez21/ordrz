@@ -1,0 +1,12 @@
+/* Checkout specific styles */
+#root,
+.checkout-container,
+[id*="checkout"],
+[class*="checkout"] {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+}
+
+/* Override any font-family that might be set by the checkout scripts */
+body .checkout-app * {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+}

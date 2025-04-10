@@ -1,0 +1,131 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Script from "next/script"
+import { getCookie } from "@/utils/cookies"
+
+export default function CheckoutIframe() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [checkoutInfo, setCheckoutInfo] = useState<any>(null)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
+
+  useEffect(() => {
+    // Check if we have the necessary cookies
+    const cartId = getCookie("unique_order_id")
+    const businessId = getCookie("wres_id")
+    const orderType = getCookie("order_type")
+    const branchId = getCookie("branch_id")
+
+    if (!cartId || !businessId || !orderType || !branchId) {
+      setError("Missing required information for checkout. Please try again.")
+      setIsLoading(false)
+      return
+    }
+
+    // Get user location from cookies or use defaults
+    const userLatitude = getCookie("userLatitude") || "0"
+    const userLongitude = getCookie("userLongitude") || "0"
+
+    // Prepare checkout info object
+    const info = {
+      cartId,
+      businessId,
+      orderType,
+      branchId,
+      source: "ordrz",
+      theme: {
+        header_bg: "#ffffff",
+        header_font_color: "#000000",
+        button_bg: "#d05749",
+        button_font_color: "#ffffff",
+        button_radius: "6",
+      },
+      userLocation: {
+        lat: userLatitude,
+        lng: userLongitude,
+      },
+      websiteLink: window.location.origin.replace("/checkout-iframe", ""),
+    }
+
+    console.log("Checkout info:", info)
+    setCheckoutInfo(info)
+    setIsLoading(false)
+  }, [])
+
+  // Handle script loading success
+  const handleScriptLoad = () => {
+    console.log("Checkout script loaded successfully")
+    setScriptLoaded(true)
+  }
+
+  // Handle script loading error
+  const handleScriptError = () => {
+    console.error("Failed to load checkout script")
+    setError("Failed to load checkout script. Please try again later.")
+    setIsLoading(false)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mb-4"></div>
+        <p className="text-gray-700">Loading checkout...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center max-w-md">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => (window.parent.location.href = "/")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Load external CSS */}
+      <link rel="stylesheet" href="https://checkout.ordrz.com/static/css/main.a666252e.css" />
+
+      {/* Checkout container */}
+      <div id="root" className="min-h-screen">
+        {!scriptLoaded && (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mb-4"></div>
+            <p className="text-gray-700">Loading checkout interface...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Set business info and load scripts */}
+      <Script id="checkout-data" strategy="afterInteractive">
+        {`
+          window.businessInfo = ${JSON.stringify(checkoutInfo)};
+          console.log("Business info set:", window.businessInfo);
+        `}
+      </Script>
+
+      <Script
+        src="https://checkout.ordrz.com/static/js/main.b75be690.js"
+        strategy="afterInteractive"
+        onLoad={handleScriptLoad}
+        onError={handleScriptError}
+      />
+
+      <Script
+        src="https://checkout.ordrz.com/static/js/179.c3afeb96.chunk.js"
+        strategy="afterInteractive"
+        onError={handleScriptError}
+      />
+    </div>
+  )
+}
